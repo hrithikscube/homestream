@@ -18,6 +18,41 @@ app.get("/files", (req, res) => {
 });
 
 // Endpoint to stream video
+// app.get("/stream", (req, res) => {
+//   const filename = req.query.filename;
+//   if (!filename) return res.status(400).send("Filename required");
+
+//   const filePath = path.join(VIDEO_FOLDER, filename);
+//   if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
+
+//   const stat = fs.statSync(filePath);
+//   const fileSize = stat.size;
+//   const range = req.headers.range;
+
+//   if (range) {
+//     const parts = range.replace(/bytes=/, "").split("-");
+//     const start = parseInt(parts[0], 10);
+//     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+//     const chunkSize = end - start + 1;
+
+//     const stream = fs.createReadStream(filePath, { start, end });
+//     res.writeHead(206, {
+//       "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+//       "Accept-Ranges": "bytes",
+//       "Content-Length": chunkSize,
+//       "Content-Type": "video/mp4",
+//     });
+//     return stream.pipe(res);
+//   }
+
+//   // Full video if no range
+//   res.writeHead(200, {
+//     "Content-Length": fileSize,
+//     "Content-Type": "video/mp4",
+//   });
+//   fs.createReadStream(filePath).pipe(res);
+// });
+
 app.get("/stream", (req, res) => {
   const filename = req.query.filename;
   if (!filename) return res.status(400).send("Filename required");
@@ -29,28 +64,42 @@ app.get("/stream", (req, res) => {
   const fileSize = stat.size;
   const range = req.headers.range;
 
-  if (range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    const chunkSize = end - start + 1;
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Range");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges");
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 
-    const stream = fs.createReadStream(filePath, { start, end });
-    res.writeHead(206, {
-      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-      "Accept-Ranges": "bytes",
-      "Content-Length": chunkSize,
+  if (!range) {
+    res.writeHead(200, {
+      "Content-Length": fileSize,
       "Content-Type": "video/mp4",
     });
-    return stream.pipe(res);
+    return fs.createReadStream(filePath).pipe(res);
   }
 
-  // Full video if no range
-  res.writeHead(200, {
-    "Content-Length": fileSize,
+  const parts = range.replace(/bytes=/, "").split("-");
+  const start = parseInt(parts[0], 10);
+  const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+  if (start >= fileSize || end >= fileSize) {
+    res.writeHead(416, { "Content-Range": `bytes */${fileSize}` });
+    return res.end();
+  }
+
+  const chunkSize = end - start + 1;
+  const fileStream = fs.createReadStream(filePath, { start, end });
+
+  res.writeHead(206, {
+    "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+    "Content-Length": chunkSize,
     "Content-Type": "video/mp4",
+    "Accept-Ranges": "bytes",
   });
-  fs.createReadStream(filePath).pipe(res);
+
+  fileStream.pipe(res);
 });
 
 app.listen(PORT, "0.0.0.0", () => {

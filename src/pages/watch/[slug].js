@@ -12,11 +12,27 @@ const Watch = () => {
 
   return (
     <div className="flex flex-col w-full h-screen bg-black items-center justify-center relative">
-      <video controls className="w-full lg:h-full h-60">
-        <source src={`http://192.168.0.166:3333/stream?filename=${filename}`} type="video/mp4" />
-        {/* <source src={`http://${host}:3000/api/stream?filename=${filename}`} type="video/mp4" /> */}
-        
-      </video>
+      {/* <video
+        playsInline
+        type="video/mp4"
+        controls className="w-full lg:h-full h-60">
+
+        <source
+          // src={`http://192.168.0.166:3333/stream?filename=${filename}`}
+          src={`http://${host}:3000/stream?filename=${filename}`}
+          type="video/mp4"
+        />
+      </video> */}
+
+      <video
+        id="player"
+        controls
+        playsinline
+        preload="metadata"
+        width="640"
+        src={`http://192.168.0.166:3333/stream?filename=${filename}`}
+      ></video>
+
     </div>
   );
 };
