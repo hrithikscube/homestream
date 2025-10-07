@@ -30,7 +30,7 @@ const Watch = () => {
         playsinline
         preload="metadata"
         width="640"
-        src={`http://192.168.0.166:3333/stream?filename=${filename}`}
+        src={`http://localhost:3333/stream?filename=${filename}`}
       ></video>
 
     </div>

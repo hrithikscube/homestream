@@ -14,7 +14,7 @@ const Browse = () => {
     }
 
     const getVideoFiles = async () => {
-        await fetch('http://192.168.0.166:3333/files')
+        await fetch('http://localhost:3333/files')
             .then((response) => response.json())
             .then((data) => {
                 setFiles(data)
